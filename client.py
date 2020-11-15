@@ -35,36 +35,41 @@ def copy(sock, option):
     print("Music file created sucessfully")
 
 
+def diff(sock):
+    """Yields the relative index and the file name of the missing music 
+    files in client."""
+    sock.send(b"--raw-available")
+    server_mscs = sock.recv(4096).decode("utf8")
+    server_mscs = server_mscs.split("|")
+    client_mscs = os.listdir(".")
+    client_mscs = [file for file in client_mscs if file.endswith("mp3")]
+    missing_client_mscs = list(
+        set(server_mscs).difference(set(client_mscs)))
+    message = str()
+    for missing in missing_client_mscs:
+        relative_index = server_mscs.index(missing) + 1
+        yield relative_index, missing
+
+
 def automatic(sock):
     """Make an update in your music catalog."""
-    # TODO: Query the musics list from server
-    sock.send(b"--raw-available")
-    server_musics = sock.recv(4096).decode("utf8")
-    server_musics = server_musics.split("|")
-
-    # TODO: Query the musics from the client directory
-    client_musics = os.listdir(".")
-    client_musics = [file for file in client_musics if file.endswith("mp3")]
-
-    # TODO: Get the server_musics - client_musics (I gonna use sets)
-    missing_client_musics = list(
-        set(server_musics).difference(set(client_musics)))
-
-    # TODO: Request the missing_musics
-    for missing in missing_client_musics:
-        relative_index = server_musics.index(missing) + 1
-        copy(sock, relative_index)
+    for index, missing in diff(sock):
+        print(f"Creating {missing} file")
+        copy(sock, index)
         time.sleep(0.2)
 
 
 def handle_args(sock, args):
     """This function is responsible by handling the arguments."""
-    if args.available:
+    if args.available and not args.diff:
         available(sock)
     elif (option := args.copy):
         copy(sock, option)
-    elif args.automatic:
+    elif args.automatic and not args.diff:
         automatic(sock)
+    elif args.diff:
+        for i, mssng in diff(sock):
+            print(f"{i} -> {mssng}")
 
 
 def main():
@@ -74,6 +79,9 @@ def main():
     parser.add_argument("-c", "--copy", help="request a copy from a given \n"
                         "option, should make nothing if the option is "
                         "invalid", type=int)
+    parser.add_argument("-d", "--diff", help="This returns a list of musics "
+                        "that in server that not in client music directory",
+                        action="store_true")
     parser.add_argument("-a", "--automatic", help="returns a list of musics "
                         "that is not in client directory",
                         action="store_true")
