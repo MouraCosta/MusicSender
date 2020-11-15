@@ -10,16 +10,11 @@ import time
 
 def available(sock):
     """Get the available music catalog in the server."""
-    sock.send(b"--available")
-    music_catalog = str()
-    while True:
-        msg = sock.recv(4096)
-        if msg == b"end":
-            break
-        else:
-            music_catalog += msg.decode("utf8")
-    print(music_catalog.strip())
-    print("-=" * 30)
+    sock.send(b"--raw-available")
+    server_musics = sock.recv(4096).decode("utf8")
+    server_musics = server_musics.split("|")
+    for i, msc in enumerate(server_musics):
+        print(f"{i} -> {msc}")
 
 
 def copy(sock, option):

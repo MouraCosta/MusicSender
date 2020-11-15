@@ -44,16 +44,6 @@ class DataHandler(socketserver.BaseRequestHandler):
             print(f"[*] Requested Option: {option}")
             self._send_music_file(int(option))
 
-    def _available(self):
-        """Show the available music in the server."""
-        print("[*] Sending the available music in the server")
-        for pos, option in enumerate(os.listdir()):
-            client_msg = f"{pos + 1} -> {option}\n"
-            time.sleep(0.1)
-            self.request.send(client_msg.encode("utf8"))
-        self.request.sendall(b"end")
-        print("[*] Available music sent")
-
     def _send_music_file(self, option):
         """Send the binary music data to the client."""
         music_name = os.listdir()[option]
