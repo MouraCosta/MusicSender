@@ -28,11 +28,10 @@ def copy(sock, option):
     sock.send(command.encode("utf8"))
     music_name = sock.recv(4096)
     with open(music_name, "wb") as music_file:
-        while True:
-            music_data = sock.recv(4096)
-            if music_data == b"end":
-                break
+        music_data = sock.recv(4096)
+        while music_data != b"end":
             music_file.write(music_data)
+            music_data = sock.recv(4096)
     print("Music file created sucessfully")
 
 
@@ -56,6 +55,16 @@ def automatic(sock):
         relative_index = server_musics.index(missing) + 1
         copy(sock, relative_index)
         time.sleep(0.2)
+
+
+def handle_args(sock, args):
+    """This function is responsible by handling the arguments."""
+    if args.available:
+        available(sock)
+    elif (option := args.copy):
+        copy(sock, option)
+    elif args.automatic:
+        automatic(sock)
 
 
 def main():
@@ -83,12 +92,7 @@ def main():
         print("Possible issues:\n\t-You're not root\n\t-Directory "
               "not found or its not a directory")
         exit(1)
-    if args.available:
-        available(sock)
-    elif (option := args.copy):
-        copy(sock, option)
-    elif args.automatic:
-        automatic(sock)
+    handle_args(sock, args)
 
 
 if __name__ == "__main__":
