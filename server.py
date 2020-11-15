@@ -9,15 +9,15 @@ import time
 
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-l", "--local", help="Indicates where the script "
-                       "have to found musics", default="./sounds")
+                       "have to found musics", default=".", type=str)
 args = argparser.parse_args()
 try:
     os.chdir(args.local)
 except (NotADirectoryError, FileNotFoundError, PermissionError):
-    print(f"\033[;33mThe --local arguments must be a path string, not "
+    print(f"\033[;31mThe --local arguments must be a path string, not "
           "{args.local}\033[m")
-    os.chdir("./sounds")
-    print("\033[;33mSetting the path to default -> (./sounds)\033[m")
+    os.chdir(".")
+    print("\033[;31mSetting the path to default -> (./)\033[m")
 
 
 class DataHandler(socketserver.BaseRequestHandler):
@@ -29,16 +29,20 @@ class DataHandler(socketserver.BaseRequestHandler):
             if not msg:
                 break
             else:
-                print(f"command received -> {msg}")
-                if msg == b"--available":
-                    self._available()
-                elif msg == b"--raw-available":
-                    self._raw_available()
-                elif b"--copy" in msg:
-                    option = msg.decode("utf8")
-                    option = int("".join(option.split()[1:])) - 1
-                    print(f"[*] Requested Option: {option}")
-                    self._send_music_file(int(option))
+                self.handle_client_commands(msg)
+
+    def handle_client_commands(self, msg):
+        """A function that stores the logical analysis."""
+        print(f"[*] Command Received -> {msg}")
+        if msg == b"--available":
+            self._available()
+        elif msg == b"--raw-available":
+            self._raw_available()
+        elif b"--copy" in msg:
+            option = msg.decode("utf8")
+            option = int("".join(option.split()[1:])) - 1
+            print(f"[*] Requested Option: {option}")
+            self._send_music_file(int(option))
 
     def _available(self):
         """Show the available music in the server."""
