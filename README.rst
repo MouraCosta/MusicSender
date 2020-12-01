@@ -7,7 +7,8 @@ your usb in the computer.
 How to use
 ==========
 
-First you need to set your server. The server must be in the local where your musics are.
+First you need to set your server. You should configure the path where the 
+server script need to find musics.
 
 * Server commands
 
