@@ -85,19 +85,24 @@ def set_ambient(client, args):
 
 def add_arguments(parser):
     """Add the arguments for the client applet."""
-    parser.add_argument("-v", "--available", help="returns the available "
-                        "music catalog", action="store_true")
-    parser.add_argument("-c", "--copy", help="request a copy from a given \n"
+    parser.add_argument("-v", "--available", help="shows the available "
+                        "music catalog and theirs code numbers "
+                        "(e.g 120, 0, 31)", action="store_true")
+    parser.add_argument("-c", "--copy", help="download a music from a given "
                         "option, should make nothing if the option is "
                         "invalid", type=int)
-    parser.add_argument("-d", "--diff", help="This returns a list of musics "
-                        "that in server that not in client music directory",
+    parser.add_argument("-d", "--diff", help="This shows a list of musics "
+                        "that in server but not in client music directory "
+                        "(sorry, I like math).\n This option is very useful "
+                        "when you want make a single copy of a music you "
+                        "don't have.",
                         action="store_true")
-    parser.add_argument("-a", "--automatic", help="returns a list of musics "
-                        "that is not in client directory",
+    parser.add_argument("-a", "--automatic", help="downloads the list of "
+                        "musics that is not in client directory.",
                         action="store_true")
-    parser.add_argument("-l", "--local", help="This is where the musics "
-                        "will be received, default is ./", default=".", type=str)
+    parser.add_argument("-l", "--local", help="This is the path the musics "
+                        "will be download, default is ./", default=".",
+                        type=str)
 
 
 def main():
