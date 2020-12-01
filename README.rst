@@ -13,7 +13,7 @@ server script need to find musics.
 * Server commands
 
     -h, --help  show this help message and exit
-    -l LOCAL, --local LOCAL  Indicates where the script have to found musics
+    -l LOCAL, --local LOCAL  Indicates where the script have to find musics
 
 After that, init your client.
 
