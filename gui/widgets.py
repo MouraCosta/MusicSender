@@ -2,28 +2,36 @@ import tkinter as tk
 from tkinter import ttk
 
 
-# FIXME: Make this class more dynamic
 class LabelInput(ttk.Frame):
-    """A shortcut class for simulating a complete entry."""
+    """A class responsible getting user input."""
 
     def __init__(self, parent, text, input_class=ttk.Entry, input_args=None,
-                 input_var=None, *args, **kwargs):
-        super().__init__(parent, *args, **kwargs)
-        input_args = input_args or None
-        self._input_var = input_var or tk.StringVar()
+                 input_var=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        input_var = tk.StringVar() or input_var
+        input_args = input_args or {}
+        if input_class == ttk.Entry:
+            input_args["textvariable"] = input_var
+        elif input_class == ModeSelector:
+            input_args["variable"] = input_var
+        self.input_var = input_var
         self.label = ttk.Label(self, text=text)
-        self.entry = ttk.Entry(self)
-        self.label.grid(row=0, column=0, sticky=tk.W)
+        self.entry = input_class(self, **input_args)
+        self.label.grid(row=0, column=0, sticky=tk.E)
         self.entry.grid(row=0, column=1, sticky=tk.W + tk.E)
 
     def get(self) -> any:
-        return self._input_var.get()
+        return self.input_var.get()
 
 
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.title("TestWindow")
-    root.resizable(width=False, height=False)
+class ModeSelector(ttk.Frame):
+    """This class is basically two radio buttons."""
 
-    # Widgets test section
-    
+    def __init__(self, parent, option1, option2, variable, **kwargs):
+        super().__init__(parent, **kwargs)
+        option1_radiobutton = ttk.Radiobutton(
+            self, text=option1, value=option1, variable=variable)
+        option2_radiobutton = ttk.Radiobutton(
+            self, text=option2, value=option2, variable=variable)
+        option1_radiobutton.grid(row=0, column=0)
+        option2_radiobutton.grid(row=0, column=1)
