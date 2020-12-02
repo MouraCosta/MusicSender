@@ -15,6 +15,9 @@ server script need to find musics.
     -h, --help  show this help message and exit
     -l LOCAL, --local LOCAL  Indicates where the script have to find musics
 
+    .. image:: server_commandline_sample.png
+    
+
 After that, init your client.
 
 * Client commands
@@ -29,8 +32,8 @@ After that, init your client.
 
     *Be careful*, the diff option will compare the server music directory with the client current directory if
     you don't specify the LOCAL argument. The same applies for the --automatic option. Your command line should 
-    look like this.::
+    look like this.
 
-        python client.py -l [PATH] -[d | a | c]
-        
+        .. image:: client_commandline_sample.png
+
     This script can be in any place, since the default directory is *./*.
