@@ -1,7 +1,11 @@
 import tkinter as tk
 from tkinter import ttk
-from widgets import *
-import os
+try:
+    from . import widgets
+except ImportError:
+    # Since everyone use "python file.py" instead of "python -m file" 
+    # this is enough
+    import widgets
 
 
 class MusicSenderApplication(tk.Tk):
@@ -9,21 +13,18 @@ class MusicSenderApplication(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         # Window configuration
         self.title("Music Sender")
-        self.geometry("600x300")
+        style = ttk.Style(self)
+        style.theme_use("clam")
 
         # Widgets configuration
-        self.path_input = LabelInput(self, "path")
-        self.path_input.grid(row=0, column=1, sticky=tk.W)
-
-    def _on_click(self):
-        try:
-            os.chdir(self.path_input.get())
-        except (FileNotFoundError, PermissionError, NotADirectoryError):
-            self.label_message_var.set("Not a directory")
-        else:
-            self.label_message_var.set(self.path_input.get())
+        self.mode_input = widgets.LabelInput(self, "MODE:", 
+            widgets.ModeSelector, {"option1": "Server", "option2": "Client"})
+        self.path_input = widgets.LabelInput(self, "path:")
+        self.mode_input.grid(row=0, column=0, sticky=tk.W + tk.E)
+        self.path_input.grid()
 
 
 if __name__ == "__main__":
