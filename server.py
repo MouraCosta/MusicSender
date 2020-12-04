@@ -7,6 +7,7 @@ import os
 import socketserver
 import time
 
+# Set the arguments for the server
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-l", "--local", help="Indicates where the script "
                        "have to found musics", default=".", type=str)
@@ -21,6 +22,8 @@ except (NotADirectoryError, FileNotFoundError, PermissionError):
 
 
 class DataHandler(socketserver.BaseRequestHandler):
+    """A class that is responsible for receiving commands and sending 
+    music data binaries."""
 
     def handle(self) -> None:
         print(f"[*] CONNECTION AT {self.client_address}")
@@ -46,7 +49,12 @@ class DataHandler(socketserver.BaseRequestHandler):
 
     def _send_music_file(self, option):
         """Send the binary music data to the client."""
-        music_name = os.listdir()[option]
+        music_name = None
+        try:
+            music_name = self._get_available()[option]
+        except IndexError:
+            self.request.send(b"not-available")
+            return 0
         filename = music_name
         print(f"[*] Sending Music {filename}")
         self.request.sendall(music_name.encode("utf8"))
@@ -64,8 +72,27 @@ class DataHandler(socketserver.BaseRequestHandler):
 
     def _raw_available(self):
         print("[*] Sending raw string available music list")
-        available_musics = "|".join(os.listdir())
-        self.request.sendall(available_musics.encode("utf8"))
+        available_musics = "|".join(self._get_available())
+        if bool(available_musics):
+            self.request.sendall(available_musics.encode("utf8"))
+        else:
+            self.request.send(b"not-available")
+
+    def _get_available(self) -> list:
+        """Get all the available musics on the server computer."""
+        files_extensions = [
+            ".pcm", ".wav", ".aiff", ".mp3", ".aac", ".ogg", ".wma", 
+            ".flac", ".alac", ".m4a"
+        ]
+
+        def filter_music_files(music_filename):
+            conds = [music_filename.endswith(extension) 
+            for extension in files_extensions]
+            return any(conds)
+        
+        available_musics = list(filter(filter_music_files, 
+                                       os.listdir(args.local)))
+        return available_musics
 
 
 if __name__ == "__main__":
