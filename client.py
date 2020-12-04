@@ -6,12 +6,22 @@ import argparse
 import os
 import socket
 import time
+import sys
+
+#! Good Idea Gabriel, but you can do even better.
+def checkout(server_data):
+    """Make a little check to see if the server has sent 
+    not-available command."""
+    if server_data == "not-available":
+        print("There's no music on the server")
+        sys.exit(1)  # Since this is not a exactly error
 
 
 def available(client):
     """Get the available music catalog in the server."""
     client.send(b"--raw-available")
     server_musics = client.recv(4096).decode("utf8")
+    checkout(server_musics)
     server_musics = server_musics.split("|")
     for i, msc in enumerate(server_musics):
         print(f"{i} -> {msc}")
@@ -22,6 +32,7 @@ def copy(client, option):
     command = f"--copy {option}"
     client.send(command.encode("utf8"))
     music_name = client.recv(4096)
+    checkout(music_name)
     with open(music_name, "wb") as music_file:
         music_data = client.recv(4096)
         while music_data != b"end":
@@ -31,10 +42,11 @@ def copy(client, option):
 
 
 def diff(client):
-    """Yields the relative index and the file name of the missing music 
+    """Yields the relative index and the file name of the missing music
     files in client."""
     client.send(b"--raw-available")
     server_mscs = client.recv(4096).decode("utf8")
+    checkout(server_mscs)
     server_mscs = server_mscs.split("|")
     client_mscs = os.listdir(".")
     client_mscs = [file for file in client_mscs if file.endswith("mp3")]
@@ -66,21 +78,26 @@ def handle_args(client, args):
             print(f"{i} -> {mssng}")
 
 
-def set_ambient(client, args):
+def set_ambient(client, args) -> bool:
     """Try to connect to the server, it automatically exits when no 
-    server was available."""
+    server was available. Returns True when the ambient was succesfully 
+    set, otherwise returns False."""
     try:
         client.connect(("localhost", 5000))
-    except ConnectionRefusedError:
-        print("\033[;31mIt was not possible to connect to the server\033[m")
-        exit(1)
-    try:
         os.chdir(args.local)
-    except (NotADirectoryError, PermissionError, FileNotFoundError):
-        print("An error has ocurred")
-        print("Possible issues:\n\t-You're not root\n\t-Directory "
-              "not found or its not a directory")
-        exit(1)
+    except (ConnectionRefusedError, NotADirectoryError, PermissionError,
+            FileNotFoundError) as err:
+        if err in (ConnectionRefusedError, NotADirectoryError, 
+                   PermissionError):
+            # When the error came from the change_directory function
+            print("An error has ocurred")
+            print("Possible issues:\n\t-You're not root\n\t-Directory "
+                  "not found or its not a directory")
+        else:
+            # When it's a server error
+            print("\033[;31mIt was not possible to connect to the server\033[m")
+        return False
+    return True
 
 
 def add_arguments(parser):
@@ -110,8 +127,11 @@ def main():
     add_arguments(parser)
     args = parser.parse_args()
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    set_ambient(client, args)
-    handle_args(client, args)
+    was_succesful = set_ambient(client, args)
+    if was_succesful:
+        handle_args(client, args)
+    else:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
