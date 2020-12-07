@@ -7,6 +7,8 @@ import os
 import socketserver
 import time
 
+import utils
+
 # Set the arguments for the server
 argparser = argparse.ArgumentParser()
 argparser.add_argument("-l", "--local", help="Indicates where the script "
@@ -80,17 +82,7 @@ class DataHandler(socketserver.BaseRequestHandler):
 
     def _get_available(self) -> list:
         """Get all the available musics on the server computer."""
-        files_extensions = [
-            ".pcm", ".wav", ".aiff", ".mp3", ".aac", ".ogg", ".wma", 
-            ".flac", ".alac", ".m4a"
-        ]
-
-        def filter_music_files(music_filename):
-            conds = [music_filename.endswith(extension) 
-            for extension in files_extensions]
-            return any(conds)
-        
-        available_musics = list(filter(filter_music_files, 
+        available_musics = list(filter(utils.is_music_file, 
                                        os.listdir(args.local)))
         return available_musics
 

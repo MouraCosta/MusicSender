@@ -5,10 +5,14 @@ server."""
 import argparse
 import os
 import socket
-import time
 import sys
+import time
+
+import utils
 
 #! Good Idea Gabriel, but you can do even better.
+
+
 def checkout(server_data):
     """Make a little check to see if the server has sent 
     not-available command."""
@@ -49,7 +53,7 @@ def diff(client):
     checkout(server_mscs)
     server_mscs = server_mscs.split("|")
     client_mscs = os.listdir(".")
-    client_mscs = [file for file in client_mscs if file.endswith("mp3")]
+    client_mscs = [file for file in client_mscs if utils.is_music_file(file)]
     missing_client_mscs = list(
         set(server_mscs).difference(set(client_mscs)))
     for missing in missing_client_mscs:
@@ -87,7 +91,7 @@ def set_ambient(client, args) -> bool:
         os.chdir(args.local)
     except (ConnectionRefusedError, NotADirectoryError, PermissionError,
             FileNotFoundError) as err:
-        if err in (ConnectionRefusedError, NotADirectoryError, 
+        if err in (ConnectionRefusedError, NotADirectoryError,
                    PermissionError):
             # When the error came from the change_directory function
             print("An error has ocurred")
