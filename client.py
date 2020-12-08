@@ -28,7 +28,7 @@ def available(client):
     checkout(server_musics)
     server_musics = server_musics.split("|")
     for i, msc in enumerate(server_musics):
-        print(f"{i} -> {msc}")
+        print(f"{i + 1} -> {msc}")
 
 
 def copy(client, option):
@@ -73,7 +73,8 @@ def handle_args(client, args):
     """This function is responsible by handling the arguments."""
     if args.available and not args.diff:
         available(client)
-    elif (option := args.copy):
+    elif args.copy:
+        option = args.copy
         copy(client, option)
     elif args.automatic and not args.diff:
         automatic(client)
@@ -83,8 +84,8 @@ def handle_args(client, args):
 
 
 def set_ambient(client, args) -> bool:
-    """Try to connect to the server, it automatically exits when no 
-    server was available. Returns True when the ambient was succesfully 
+    """Try to connect to the server, it automatically exits when no
+    server was available. Returns True when the ambient was succesfully
     set, otherwise returns False."""
     try:
         client.connect(("localhost", 5000))
@@ -99,7 +100,8 @@ def set_ambient(client, args) -> bool:
                   "not found or its not a directory")
         else:
             # When it's a server error
-            print("\033[;31mIt was not possible to connect to the server\033[m")
+            print("\033[;31mIt was not possible to connect to "
+                  "the server\033[m")
         return False
     return True
 
