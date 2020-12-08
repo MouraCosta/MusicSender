@@ -11,20 +11,19 @@ except ImportError:
 class MusicSenderApplication(tk.Tk):
     """Main program."""
 
+    WINDOW_HEIGHT = 150
+    WINDOW_WIDTH = 600
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Window configuration
         self.title("Music Sender")
+        self.geometry(f"{self.WINDOW_WIDTH}x{self.WINDOW_HEIGHT}")
         style = ttk.Style(self)
         style.theme_use("clam")
 
-        # Widgets configuration
-        self.mode_input = widgets.LabelInput(self, "MODE:", 
-            widgets.ModeSelector, {"option1": "Server", "option2": "Client"})
-        self.path_input = widgets.LabelInput(self, "path:")
-        self.mode_input.grid(row=0, column=0, sticky=tk.W + tk.E)
-        self.path_input.grid()
+        widgets.MusicSenderAppForm(self).pack()
 
 
 if __name__ == "__main__":
