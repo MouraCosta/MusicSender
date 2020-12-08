@@ -35,3 +35,42 @@ class ModeSelector(ttk.Frame):
             self, text=option2, value=option2, variable=variable)
         option1_radiobutton.grid(row=0, column=0)
         option2_radiobutton.grid(row=0, column=1)
+
+
+class StatusTable(ttk.Frame):
+    """A table that show if there's something wrong in the app."""
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.label_variable = tk.StringVar()
+        self.table = ttk.Labelframe(self, text="Status", labelanchor="n",
+            borderwidth=1)
+        self.label = ttk.Label(self.table, textvariable=self.label_variable,
+            relief="flat", width=20, wraplength=160)
+        self.table.grid(row=0, column=0)
+        self.label.grid(row=0, column=0)
+    
+    def set_text(self, text):
+        """Set a text indicating some error or progress."""
+        self.label_variable.set(text)
+
+
+class MusicSenderAppForm(ttk.Frame):
+    """A dynamic form to the application."""
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.config(width=600, height=150)
+        # Widgets Creation
+        self.mode_input = LabelInput(self, "MODE:", 
+            ModeSelector, {"option1": "Server", "option2": "Client"})
+        self.path_input = LabelInput(self, "path:", 
+            input_args={"width": 40})
+        self.issues_table = StatusTable(self)
+        self.button = ttk.Button(self, text="Click me")
+
+        # Widgets Setting
+        self.mode_input.place(x=200, y=0)
+        self.issues_table.place(x=430, y=30)
+        self.path_input.place(x=4, y=52)
+        self.button.place(x=230, y=110)
