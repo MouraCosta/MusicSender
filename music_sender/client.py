@@ -8,7 +8,10 @@ import socket
 import sys
 import time
 
-import utils
+try:
+    from . import utils
+except ImportError:
+    import utils
 
 #! Good Idea Gabriel, but you can do even better.
 
@@ -83,13 +86,13 @@ def handle_args(client, args):
             print(f"{i} -> {mssng}")
 
 
-def set_ambient(client, args) -> bool:
+def set_ambient(client, path) -> bool:
     """Try to connect to the server, it automatically exits when no
     server was available. Returns True when the ambient was succesfully
     set, otherwise returns False."""
     try:
         client.connect(("localhost", 5000))
-        os.chdir(args.local)
+        os.chdir(path)
     except (ConnectionRefusedError, NotADirectoryError, PermissionError,
             FileNotFoundError) as err:
         if err in (ConnectionRefusedError, NotADirectoryError,
@@ -133,7 +136,7 @@ def main():
     add_arguments(parser)
     args = parser.parse_args()
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    was_succesful = set_ambient(client, args)
+    was_succesful = set_ambient(client, args.local)
     if was_succesful:
         handle_args(client, args)
     else:

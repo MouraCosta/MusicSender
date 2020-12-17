@@ -4,23 +4,14 @@ name from a client and create that file in the executing machine."""
 
 import argparse
 import os
+import sys
 import socketserver
 import time
 
-import utils
-
-# Set the arguments for the server
-argparser = argparse.ArgumentParser()
-argparser.add_argument("-l", "--local", help="Indicates where the script "
-                       "have to found musics", default=".", type=str)
-args = argparser.parse_args()
 try:
-    os.chdir(args.local)
-except (NotADirectoryError, FileNotFoundError, PermissionError):
-    print(f"\033[;31mThe --local arguments must be a path string, not "
-          "{args.local}\033[m")
-    os.chdir(".")
-    print("\033[;31mSetting the path to default -> (./)\033[m")
+    from . import utils
+except ImportError:
+    import utils
 
 
 class DataHandler(socketserver.BaseRequestHandler):
@@ -82,12 +73,43 @@ class DataHandler(socketserver.BaseRequestHandler):
 
     def _get_available(self) -> list:
         """Get all the available musics on the server computer."""
-        available_musics = list(filter(utils.is_music_file, 
-                                       os.listdir(args.local)))
+        available_musics = list(filter(utils.is_music_file, os.listdir(".")))
         return available_musics
 
 
-if __name__ == "__main__":
-    server = socketserver.ThreadingTCPServer(("localhost", 5000), DataHandler)
+def set_ambient(local):
+    """Set the ambient for the server."""
+    try:
+        os.chdir(local)
+    except (NotADirectoryError, FileNotFoundError, PermissionError):
+        print(f"\033[;31mThe --local arguments must be a path string, not "
+              "{args.local}\033[m")
+        os.chdir(".")
+        print("\033[;31mSetting the path to default -> (./)\033[m")
+
+
+def start(server):
+    """Starts the server to run."""
     print(f"[Started] --> {('localhost', 5000)}")
     server.serve_forever()
+
+
+def stop(server):
+    """Stops the server."""
+    server.shutdown()
+    server.server_close()
+
+def main():
+    """Main Program"""
+    # Set the arguments for the server
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument("-l", "--local", help="Indicates where the script "
+        "have to found musics", default=".", type=str)
+    args = argparser.parse_args()
+    set_ambient(args.local)
+    server = socketserver.ThreadingTCPServer(("localhost", 5000), DataHandler)
+    start(server)
+
+
+if __name__ == "__main__":
+    main()

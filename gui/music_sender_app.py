@@ -1,5 +1,10 @@
+import sys
 import tkinter as tk
 from tkinter import ttk
+
+#! Search for another way to import without errors. this is not beautiful
+sys.path.append("./")
+sys.path.append("../")
 try:
     from . import widgets
 except ImportError:
@@ -20,6 +25,7 @@ class MusicSenderApplication(tk.Tk):
         # Window configuration
         self.title("Music Sender")
         self.geometry(f"{self.WINDOW_WIDTH}x{self.WINDOW_HEIGHT}")
+        self.resizable(False, False)
         style = ttk.Style(self)
         style.theme_use("clam")
 
