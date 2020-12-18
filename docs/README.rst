@@ -3,9 +3,10 @@ Music Sender
 ============
 
 A little app that sends music dinamically or update a music catalogue to
-another device automatically. The scripts that composes the application is
-"client.py" and "server.py". These scripts were created to be independent and
-with the capability of running in any machine (See also `Dependencies`_).
+another device automatically. There's two ways to use this program, You can 
+use the command line version or gui version or both at the same time (i.e in 
+different modes). See `Terminal`_ to know how to use the terminal version, or
+the `User interface app`_
 
 Command line arguments
 ======================
@@ -52,6 +53,7 @@ Terminal
 
 Server
 ~~~~~~
+
 Given the options in `Command line arguments`_, start your server.
 Here an example of what you can do.
 
@@ -98,7 +100,7 @@ client directory).
 .. note:: Remember that the diff option compare the client directory (i.e the 
           choosen directory where the musics will be downloaded), so it's 
           recommended to use the "--local" option.
-    
+
 .. image:: images/client_diff_and_local.png
 
 After that, you can request a music by his code, with the "copy" option:
@@ -124,10 +126,47 @@ output.
 User interface app
 ------------------
 
-Coming out soon.
-    
-Dependencies
-============
+The user interface app is the most easy to use, since he gives only two 
+options, start a server or download the musics.
 
-    * utils.py
-    * python >= 3.7
+Meeting the interface
+~~~~~~~~~~~~~~~~~~~~~
+
+Here is your interface of music sender.
+
+    .. image:: images/interface.png
+
+Mode
+   This is a mode selector, that dinamically changes the behavior of the 
+   application. For instance, if you click the server mode, the button 
+   behavior is changed to starting a music sender server.
+
+Path
+   In this case it relies on your mode. If you set server mode, the path 
+   indicates where the music sender need to find the musics. If you set 
+   client mode, the path indicates the path where the musics will be 
+   downloaded.
+
+Status
+   This show if there's any issue about the program, such as "ERROR" or "OK".
+   Usually indicates "ERROR" for path entry (i.e If the path is invalid) or a 
+   application problem (e.g was not possible to connect to the server or 
+   start one.).
+
+Button
+   When you're ready to start the application, you can just click the 
+   button and he will make all the magic.
+
+Starting a server
+~~~~~~~~~~~~~~~~~
+
+To start a server just select the server mode and press the start button.
+
+    .. image:: images/interface_server_running.png
+
+Requesting the musics
+~~~~~~~~~~~~~~~~~~~~~
+
+To request the musics just select the client mode and press the update button.
+
+    .. image:: images/interface_client_running.png
