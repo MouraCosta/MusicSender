@@ -38,6 +38,14 @@ class LabelInput(ttk.Frame):
     def set(self, value):
         """Set a new value to the linked variable."""
         self.input_var.set(value)
+    
+    def label_config(self, **kwargs):
+        """Make changes on the label widget."""
+        self.label.config(**kwargs)
+    
+    def entry_config(self, **kwargs):
+        """Make changes on the entry widget."""
+        self.entry.config(**kwargs)
 
 
 class ModeSelector(ttk.Frame):
@@ -80,6 +88,7 @@ class MusicSenderAppForm(ttk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.config(width=600, height=150)
+
         # Widgets Creation
         self.button = ttk.Button(self, text="Update",
                                  command=self._click_client)
@@ -114,11 +123,9 @@ class MusicSenderAppForm(ttk.Frame):
         except (FileNotFoundError, NotADirectoryError, PermissionError):
             # At this point the code must interate with the status table.
             print("\033[;31mThere's an error\033[m")
-            self.issues_table.set_text("Error!")
             return False
         else:
             print("\033[;32mDoing so fine. Path is Ok\033[m")
-            self.issues_table.set_text("Ok")
             return True
 
     def _button_decorator(f):
@@ -158,7 +165,6 @@ class MusicSenderAppForm(ttk.Frame):
             return socketserver.ThreadingTCPServer(
                 ("localhost", 5000), server.DataHandler)
         except OSError:
-            self.issues_table.set_text("Error")
             return None
 
     def _click_server(self):
@@ -174,7 +180,9 @@ class MusicSenderAppForm(ttk.Frame):
             self.button.config(text="Stop", 
                 command=lambda: self._click_stop_server(app_server))
         else:
-            self.issues_table.set_text("Error")
+            error_msg = "Error." + ("\nPath is Invalid" if not path_isvalid 
+                else "\nCannot start server")
+            self.issues_table.set_text(error_msg)
 
     @_button_decorator
     def _download(self, app_client):
@@ -196,4 +204,6 @@ class MusicSenderAppForm(ttk.Frame):
             else:
                 print("\033[;31mThe client was unable to connect to the "
                       "server.\033[m")
-                self.issues_table.set_text("ERROR !")
+                self.issues_table.set_text("Cannot connect to the server")
+        else:
+            self.issues_table.set_text("Error.\nPath is invalid.")
