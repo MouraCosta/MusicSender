@@ -151,7 +151,7 @@ Status
    This show if there's any issue about the program, such as "ERROR" or "OK".
    Usually indicates "ERROR" for path entry (i.e If the path is invalid) or a 
    application problem (e.g was not possible to connect to the server or 
-   start one.).
+   start one).
 
 Button
    When you're ready to start the application, you can just click the 
