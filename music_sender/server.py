@@ -4,7 +4,6 @@ name from a client and create that file in the executing machine."""
 
 import argparse
 import os
-import sys
 import socketserver
 import time
 
@@ -99,6 +98,7 @@ def stop(server):
     server.shutdown()
     server.server_close()
 
+
 def main():
     """Main Program"""
     # Set the arguments for the server
@@ -107,8 +107,18 @@ def main():
         "have to found musics", default=".", type=str)
     args = argparser.parse_args()
     set_ambient(args.local)
-    server = socketserver.ThreadingTCPServer(("localhost", 5000), DataHandler)
-    start(server)
+    server = None
+    try:
+        server = socketserver.ThreadingTCPServer(("localhost", 5000), 
+            DataHandler)
+        start(server)
+    except OSError:
+        # When there's another server running
+        print("\033[;31mThere's another server running\033[m")
+    except KeyboardInterrupt:
+        # When the user want to stop the server
+        print("Done")
+        stop(server)
 
 
 if __name__ == "__main__":
