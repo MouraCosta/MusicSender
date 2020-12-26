@@ -1,6 +1,10 @@
 #! /usr/local/bin/python3.9
 """This is TCP client. His function is to request music binary data to the TCP
-server."""
+server.
+
+In fact, this client script contains a set of functions that are responsible 
+for making some automated actions with a given client setting socket instance.
+"""
 
 import argparse
 import os
@@ -13,15 +17,13 @@ try:
 except ImportError:
     import utils
 
-#! Good Idea Gabriel, but you can do even better.
-
 
 def checkout(server_data):
     """Make a little check to see if the server has sent 
     not-available command."""
     if server_data == "not-available":
         print("There's no music on the server")
-        sys.exit(1)  # Since this is not a exactly error
+        sys.exit(0)  # Since this is not a exactly error
 
 
 def available(client):

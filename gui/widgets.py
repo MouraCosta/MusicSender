@@ -5,12 +5,7 @@ import tkinter as tk
 from os import chdir
 from threading import Thread
 from tkinter import ttk
-
-#! Search for another way to import without errors. this is not beautiful
-sys.path.append("./")
-sys.path.append("../")
-
-from music_sender import client, server
+from ..music_sender import client, server
 
 
 class LabelInput(ttk.Frame):

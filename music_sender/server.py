@@ -1,6 +1,8 @@
 #! /usr/local/bin/python3.9
-"""This is a tcp server. His function is to receive the music
-name from a client and create that file in the executing machine."""
+"""This is a tcp server. He's responsible for sending music binary data to 
+the client. 
+It provides a default handler for sending musics or data about them to the 
+client."""
 
 import argparse
 import os
