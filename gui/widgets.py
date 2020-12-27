@@ -1,11 +1,10 @@
 import socket
 import socketserver
-import sys
 import tkinter as tk
 from os import chdir
 from threading import Thread
 from tkinter import ttk
-from ..music_sender import client, server
+from music_sender import client, server
 
 
 class LabelInput(ttk.Frame):
