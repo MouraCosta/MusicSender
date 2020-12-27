@@ -2,3 +2,4 @@
 /lrng_argp
 /.vscode
 __pycache__
+*.pyc

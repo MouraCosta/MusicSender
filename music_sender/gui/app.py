@@ -20,3 +20,8 @@ class MusicSenderApplication(tk.Tk):
         style.theme_use("clam")
 
         widgets.MusicSenderAppForm(self).pack()
+
+
+if __name__ == "__main__":
+    app = MusicSenderApplication()
+    app.mainloop()
