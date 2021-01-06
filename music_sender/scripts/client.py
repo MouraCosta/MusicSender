@@ -11,11 +11,7 @@ import os
 import socket
 import sys
 import time
-
-try:
-    from . import utils
-except ImportError:
-    import utils
+from . import utils
 
 
 def checkout(server_data):

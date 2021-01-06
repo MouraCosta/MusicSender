@@ -1,4 +1,3 @@
-#! /usr/local/bin/python3.9
 """This is a tcp server. He's responsible for sending music binary data to 
 the client. 
 It provides a default handler for sending musics or data about them to the 
@@ -8,11 +7,7 @@ import argparse
 import os
 import socketserver
 import time
-
-try:
-    from . import utils
-except ImportError:
-    import utils
+from . import utils
 
 
 class DataHandler(socketserver.BaseRequestHandler):
@@ -48,21 +43,16 @@ class DataHandler(socketserver.BaseRequestHandler):
             music_name = self._get_available()[option]
         except IndexError:
             self.request.send(b"not-available")
-            return 0
+            return
         filename = music_name
         print(f"[*] Sending Music {filename}")
         self.request.sendall(music_name.encode("utf8"))
         time.sleep(0.2)
-        with open(filename, "rb") as f:
-            while True:
-                bytes_read = f.read(4096)
-                if not bytes_read:
-                    print(f"[*] Music from {filename} sent.")
-                    break
-                self.request.sendall(bytes_read)
-            time.sleep(0.2)
-            print("[*] Sending end warning to the client.")
-            self.request.sendall(b"end")
+        music_file = open(filename, "rb")
+        self.request.sendfile(music_file)
+        time.sleep(0.2)
+        print("[*] Sending end warning to the client.")
+        self.request.sendall(b"end")
 
     def _raw_available(self):
         print("[*] Sending raw string available music list")
@@ -91,7 +81,7 @@ def set_ambient(local):
 
 def start(server):
     """Starts the server to run."""
-    print(f"[Started] --> {('localhost', 5000)}")
+    print(f"[Started] --> {server.server_address}")
     server.serve_forever()
 
 

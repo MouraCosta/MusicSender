@@ -22,6 +22,10 @@ class MusicSenderApplication(tk.Tk):
         widgets.MusicSenderAppForm(self).pack()
 
 
-if __name__ == "__main__":
+def main():
     app = MusicSenderApplication()
     app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
