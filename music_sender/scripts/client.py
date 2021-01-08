@@ -8,6 +8,7 @@ for making some automated actions with a given client setting socket instance.
 
 import argparse
 import os
+import random
 import socket
 import sys
 import time
@@ -84,12 +85,12 @@ def handle_args(client, args):
             print(f"{i} -> {mssng}")
 
 
-def set_ambient(client, path) -> bool:
+def set_ambient(client, path, host, port) -> bool:
     """Try to connect to the server, it automatically exits when no
     server was available. Returns True when the ambient was succesfully
     set, otherwise returns False."""
     try:
-        client.connect(("localhost", 5000))
+        client.connect((host, port))
         os.chdir(path)
     except (ConnectionRefusedError, NotADirectoryError, PermissionError,
             FileNotFoundError) as err:
@@ -127,6 +128,10 @@ def add_arguments(parser):
     parser.add_argument("-l", "--local", help="This is the path the musics "
                         "will be download, default is ./", default=".",
                         type=str)
+    parser.add_argument("-hs", "--host", help="Server host", type=str, 
+                        default=socket.gethostname())
+    parser.add_argument("-p", "--port", help="Server port", type=int, 
+                        default=random.randrange(1, 65432))
 
 
 def main():
@@ -134,7 +139,7 @@ def main():
     add_arguments(parser)
     args = parser.parse_args()
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    was_succesful = set_ambient(client, args.local)
+    was_succesful = set_ambient(client, args.local, args.host, args.port)
     if was_succesful:
         handle_args(client, args)
     else:

@@ -5,7 +5,9 @@ client."""
 
 import argparse
 import os
+import random
 import socketserver
+import socket
 import time
 from . import utils
 
@@ -97,11 +99,15 @@ def main():
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--local", help="Indicates where the script "
         "have to found musics", default=".", type=str)
+    argparser.add_argument("-hs", "--host", help="Server host", type=str, 
+        default=socket.gethostname())
+    argparser.add_argument("-p", "--port", help="Server port", type=int,
+        default=random.randrange(1, 65432))
     args = argparser.parse_args()
     set_ambient(args.local)
     server = None
     try:
-        server = socketserver.ThreadingTCPServer(("localhost", 5000), 
+        server = socketserver.ThreadingTCPServer((args.host, args.port),
             DataHandler)
         start(server)
     except OSError:
