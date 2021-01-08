@@ -1,9 +1,12 @@
+import random
+import re
 import socket
 import socketserver
 import tkinter as tk
 from os import chdir
 from threading import Thread
 from tkinter import ttk
+
 from ..scripts import client, server
 
 
@@ -76,6 +79,28 @@ class StatusTable(ttk.Frame):
         self.label_variable.set(text)
 
 
+class HostPortForm(ttk.Frame):
+    """A class that ask for a host and a port."""
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.host_input = LabelInput(self, "Host: ")
+        self.port_input = LabelInput(self, "Port: ")
+        self.host_input.grid(row=0)
+        self.port_input.grid(row=1)
+
+    def get(self):
+        if self.host_input.get() and self.port_input.get():
+            return self.host_input.get(), int(self.port_input.get())
+        else:
+            return (socket.gethostbyname(socket.gethostname()), 
+                random.randrange(1, 65432))
+
+    def set(self, host, port):
+        self.host_input.set(host)
+        self.port_input.set(port)
+
+
 class MusicSenderAppForm(ttk.Frame):
     """A dynamic form to the application."""
 
@@ -102,10 +127,12 @@ class MusicSenderAppForm(ttk.Frame):
 
         self.path_input = LabelInput(self, "path:", input_args={"width": 40})
         self.issues_table = StatusTable(self)
+        self.host_port_input = HostPortForm(self)
 
         # Widgets Setting
         self.mode_input.place(x=200, y=0)
-        self.issues_table.place(x=430, y=30)
+        self.issues_table.place(x=430, y=5)
+        self.host_port_input.place(x=380, y=100)
         self.path_input.place(x=4, y=52)
         self.button.place(x=230, y=110)
 
@@ -121,6 +148,15 @@ class MusicSenderAppForm(ttk.Frame):
         else:
             print("\033[;32mDoing so fine. Path is Ok\033[m")
             return True
+    
+    def _validate_port_host_input(self, host, port):
+        """Checks if the the host and port are valid. Returns True if all is 
+        valid, False if any of is invalid."""
+        local_match = bool(re.match("127.[0-1].[0-1].[0-1]", host))
+        ip_match = bool(re.match("[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9].[0-9]", host))
+        if not ((local_match or ip_match) and (1 < port < 65432)):
+            return False
+        return True
 
     def _button_decorator(f):
         """Guarantees that the user do not interrupt the
@@ -151,13 +187,20 @@ class MusicSenderAppForm(ttk.Frame):
         self.issues_table.set_text("")
         self.button.config(text="Start", command=self._click_server)
         self.path_input.entry.delete("0", tk.END)
+        self.host_port_input.host_input.entry.delete("0", tk.END)
+        self.host_port_input.port_input.entry.delete("0", tk.END)
 
     def _create_server(self):
         """Returns an server object. None if the the host is already 
         in use."""
         try:
-            return socketserver.ThreadingTCPServer(
-                ("localhost", 5000), server.DataHandler)
+            host_port_available = self.host_port_input.get()
+            if self._validate_port_host_input(*host_port_available):
+                return socketserver.ThreadingTCPServer(host_port_available,
+                    server.DataHandler)
+            else:
+                # It means that address is not valid
+                return None
         except OSError:
             return None
 
@@ -171,6 +214,9 @@ class MusicSenderAppForm(ttk.Frame):
                 args=(app_server, ))
             server_daemon.start()
             self.issues_table.set_text("Server Started")
+
+            # Always update the form to the user see what is the address.
+            self.host_port_input.set(*app_server.server_address)
             self.button.config(text="Stop", 
                 command=lambda: self._click_stop_server(app_server))
         else:
@@ -183,13 +229,15 @@ class MusicSenderAppForm(ttk.Frame):
         self.issues_table.set_text("WAIT !")
         client.automatic(app_client)
         self.issues_table.set_text("FINISHED !")
-    
+
     def _click_client(self):
         """Make an automatic request to the server."""
         path_isvalid = self._validate_path()
-        if path_isvalid:
+        HOST, PORT = self.host_port_input.get()
+        host_port_isvalid = self._validate_port_host_input(HOST, PORT)
+        if path_isvalid and host_port_isvalid:
             app_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            success = client.set_ambient(app_client, self.path_input.get())
+            success = client.set_ambient(app_client, self.path_input.get(), HOST, PORT)
             if success:
                 # Creates a daemon thread for requesting the missing musics
                 client_daemon = Thread(target=self._download, 
@@ -200,4 +248,7 @@ class MusicSenderAppForm(ttk.Frame):
                       "server.\033[m")
                 self.issues_table.set_text("Cannot connect to the server")
         else:
-            self.issues_table.set_text("Error.\nPath is invalid.")
+            if not path_isvalid:
+                self.issues_table.set_text("Error.\nPath is invalid.")
+            else:
+                self.issues_table.set_text("Error.\n Host or port are invalid")
