@@ -35,16 +35,17 @@ def available(client):
 
 def copy(client, option):
     """Get a music copy from the server."""
-    command = f"--copy {option}"
-    client.send(command.encode("utf8"))
-    music_name = client.recv(4096)
+    client.send(f"--copy {option}".encode("utf8"))
+    music_name = client.recv(4096).decode("utf8")
     checkout(music_name)
+    print(f"Creating {music_name}")
     with open(music_name, "wb") as music_file:
-        music_data = client.recv(4096)
-        while music_data != b"end":
-            music_file.write(music_data)
-            music_data = client.recv(4096)
-    print("Music file created sucessfully")
+        while True:
+            data = client.recv(4096)
+            if data == b"end":
+                break
+            music_file.write(data)
+    print(f"{music_name} created with success.")
 
 
 def diff(client):
@@ -54,8 +55,8 @@ def diff(client):
     server_mscs = client.recv(4096).decode("utf8")
     checkout(server_mscs)
     server_mscs = server_mscs.split("|")
-    client_mscs = os.listdir(".")
-    client_mscs = [file for file in client_mscs if utils.is_music_file(file)]
+    client_mscs = [file for file in os.listdir(
+        ".") if utils.is_music_file(file)]
     missing_client_mscs = list(
         set(server_mscs).difference(set(client_mscs)))
     for missing in missing_client_mscs:
@@ -128,9 +129,9 @@ def add_arguments(parser):
     parser.add_argument("-l", "--local", help="This is the path the musics "
                         "will be download, default is ./", default=".",
                         type=str)
-    parser.add_argument("-hs", "--host", help="Server host", type=str, 
+    parser.add_argument("-hs", "--host", help="Server host", type=str,
                         default=socket.gethostname())
-    parser.add_argument("-p", "--port", help="Server port", type=int, 
+    parser.add_argument("-p", "--port", help="Server port", type=int,
                         default=random.randrange(1, 65432))
 
 

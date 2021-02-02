@@ -1,5 +1,6 @@
 """This is a tcp server. He's responsible for sending music binary data to 
-the client. 
+the client.
+
 It provides a default handler for sending musics or data about them to the 
 client."""
 
@@ -31,7 +32,7 @@ class DataHandler(socketserver.BaseRequestHandler):
         if msg == b"--available":
             self._available()
         elif msg == b"--raw-available":
-            self._raw_available()
+            self._send_available()
         elif b"--copy" in msg:
             option = msg.decode("utf8")
             option = int("".join(option.split()[1:])) - 1
@@ -43,20 +44,18 @@ class DataHandler(socketserver.BaseRequestHandler):
         music_name = None
         try:
             music_name = self._get_available()[option]
+            self.request.send(music_name.encode("utf8"))
+            music_file = open(music_name, "rb")
+            print(f"[*] Sending {music_name}")
+            self.request.sendfile(music_file)
+            time.sleep(0.2)
+            self.request.send(b"end")
+            print(f"[*] {music_name} sent.")
         except IndexError:
             self.request.send(b"not-available")
             return
-        filename = music_name
-        print(f"[*] Sending Music {filename}")
-        self.request.sendall(music_name.encode("utf8"))
-        time.sleep(0.2)
-        music_file = open(filename, "rb")
-        self.request.sendfile(music_file)
-        time.sleep(0.2)
-        print("[*] Sending end warning to the client.")
-        self.request.sendall(b"end")
 
-    def _raw_available(self):
+    def _send_available(self):
         print("[*] Sending raw string available music list")
         available_musics = "|".join(self._get_available())
         if bool(available_musics):
@@ -98,17 +97,17 @@ def main():
     # Set the arguments for the server
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--local", help="Indicates where the script "
-        "have to found musics", default=".", type=str)
-    argparser.add_argument("-hs", "--host", help="Server host", type=str, 
-        default=socket.gethostname())
+                           "have to found musics", default=".", type=str)
+    argparser.add_argument("-hs", "--host", help="Server host", type=str,
+                           default=socket.gethostname())
     argparser.add_argument("-p", "--port", help="Server port", type=int,
-        default=random.randrange(1, 65432))
+                           default=random.randrange(1, 65432))
     args = argparser.parse_args()
     set_ambient(args.local)
     server = None
     try:
         server = socketserver.ThreadingTCPServer((args.host, args.port),
-            DataHandler)
+                                                 DataHandler)
         start(server)
     except OSError:
         # When there's another server running
