@@ -1,4 +1,3 @@
-#! /usr/local/bin/python3.9
 """This is TCP client. His function is to request music binary data to the TCP
 server.
 
@@ -20,7 +19,7 @@ def checkout(server_data):
     not-available command."""
     if server_data == "not-available":
         print("There's no music on the server")
-        sys.exit(0)  # Since this is not a exactly error
+        sys.exit(0)
 
 
 def available(client):
@@ -40,11 +39,7 @@ def copy(client, option):
     checkout(music_name)
     print(f"Creating {music_name}")
     with open(music_name, "wb") as music_file:
-        while True:
-            data = client.recv(4096)
-            if data == b"end":
-                break
-            music_file.write(data)
+        music_file.write(client.makefile("rb").read())
     print(f"{music_name} created with success.")
 
 
@@ -66,9 +61,8 @@ def diff(client):
 
 def automatic(client):
     """Make an update in your music catalog."""
-    for index, missing in diff(client):
-        print(f"Creating {missing} file")
-        copy(client, index)
+    for info in diff(client):
+        copy(client, info[0])
         time.sleep(0.2)
 
 

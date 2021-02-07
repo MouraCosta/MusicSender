@@ -9,7 +9,6 @@ import os
 import random
 import socketserver
 import socket
-import time
 from . import utils
 
 
@@ -21,10 +20,9 @@ class DataHandler(socketserver.BaseRequestHandler):
         print(f"[*] CONNECTION AT {self.client_address}")
         while True:
             msg = self.request.recv(4096)
-            if not msg:
+            if msg == "":
                 break
-            else:
-                self.handle_client_commands(msg)
+            self.handle_client_commands(msg)
 
     def handle_client_commands(self, msg):
         """A function that stores the logical analysis."""
@@ -39,6 +37,7 @@ class DataHandler(socketserver.BaseRequestHandler):
             print(f"[*] Requested Option: {option}")
             self._send_music_file(int(option))
 
+    # TODO: Fix the automatic function
     def _send_music_file(self, option):
         """Send the binary music data to the client."""
         music_name = None
@@ -48,12 +47,10 @@ class DataHandler(socketserver.BaseRequestHandler):
             music_file = open(music_name, "rb")
             print(f"[*] Sending {music_name}")
             self.request.sendfile(music_file)
-            time.sleep(0.2)
-            self.request.send(b"end")
             print(f"[*] {music_name} sent.")
+            self.request.close()
         except IndexError:
             self.request.send(b"not-available")
-            return
 
     def _send_available(self):
         print("[*] Sending raw string available music list")
@@ -73,11 +70,19 @@ def set_ambient(local):
     """Set the ambient for the server."""
     try:
         os.chdir(local)
-    except (NotADirectoryError, FileNotFoundError, PermissionError):
-        print(f"\033[;31mThe --local arguments must be a path string, not "
-              "{args.local}\033[m")
-        os.chdir(".")
-        print("\033[;31mSetting the path to default -> (./)\033[m")
+    except (NotADirectoryError, FileNotFoundError, PermissionError) as error:
+        print("\033[;31m")
+        if isinstance(error, NotADirectoryError):
+            print(f"The \"--local\" argument {local} is not a directory")
+        elif isinstance(error, FileNotFoundError):
+            print(f"The \"--local\" argument {local} does not exist.")
+        elif isinstance(error, PermissionError):
+            print("You do not have enough permissions to access this directory.")
+            print("you must be root")
+        local = "./"
+        os.chdir(local)
+        print("In the current directory.")
+        print("\033[m")
 
 
 def start(server):
