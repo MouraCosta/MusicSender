@@ -1,6 +1,6 @@
-============
-Music Sender
-============
+===========================================
+Music Sender (In progress, dont use it yet)
+===========================================
 
 A little app that sends music dinamically or update a music catalogue to
 another device automatically.
