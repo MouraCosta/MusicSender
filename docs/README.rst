@@ -1,5 +1,5 @@
 ============
-Music Sender
+Music Sender (I progress, don't use yet)
 ============
 
 A little app that sends music dinamically or update a music catalogue to
