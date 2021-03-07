@@ -90,15 +90,26 @@ class HostPortForm(ttk.Frame):
         self.port_input.grid(row=1)
 
     def get(self):
+        """Returns a tuple of strings with the host and port."""
         if self.host_input.get() and self.port_input.get():
-            return self.host_input.get(), int(self.port_input.get())
+            return self.host_input.get(), self.port_input.get()
         else:
             return (socket.gethostbyname(socket.gethostname()), 
-                random.randrange(1, 65432))
+                random.randrange(1024, 65432))
 
     def set(self, host, port):
         self.host_input.set(host)
         self.port_input.set(port)
+
+    def _is_valid(self):
+        """Checks if the the host and port are valid. Returns True if all is 
+        valid, False if any of is invalid."""
+        host, port = self.get()
+        local_match = bool(re.fullmatch("127.\d{1,3}.\d{1,3}.\d{1,3}", host))
+        ip_match = bool(re.fullmatch("192.168.\d{1,3}.\d{1,3}", host))
+        if not ((local_match or ip_match) and (1024 < int(port) < 65432)):
+            return False
+        return True
 
 
 class MusicSenderAppForm(ttk.Frame):
@@ -148,17 +159,8 @@ class MusicSenderAppForm(ttk.Frame):
         else:
             print("\033[;32mDoing so fine. Path is Ok\033[m")
             return True
-    
-    def _validate_port_host_input(self, host, port):
-        """Checks if the the host and port are valid. Returns True if all is 
-        valid, False if any of is invalid."""
-        local_match = bool(re.match("127.[0-1].[0-1].[0-1]", host))
-        ip_match = bool(re.match("[0-9][0-9][0-9].[0-9][0-9][0-9].[0-9].[0-9]", host))
-        if not ((local_match or ip_match) and (1 < port < 65432)):
-            return False
-        return True
 
-    def _button_decorator(f):
+    def _close_mode_changer(f):
         """Guarantees that the user do not interrupt the
         process."""
 
@@ -172,13 +174,13 @@ class MusicSenderAppForm(ttk.Frame):
             self.mode_input.entry.option2_radiobutton.config(state=tk.ACTIVE)
         return wrapper
 
-    @_button_decorator
+    @_close_mode_changer
     def _start_server(self, app_server):
         """Starts the server."""
         server.set_ambient(self.path_input.get())
         server.start(app_server)
 
-    @_button_decorator
+    @_close_mode_changer
     def _click_stop_server(self, app_server):
         """Shutdown the server."""
         server.stop(app_server)
@@ -194,12 +196,11 @@ class MusicSenderAppForm(ttk.Frame):
         """Returns an server object. None if the the host is already 
         in use."""
         try:
-            host_port_available = self.host_port_input.get()
-            if self._validate_port_host_input(*host_port_available):
-                return socketserver.ThreadingTCPServer(host_port_available,
-                    server.DataHandler)
+            if self.host_port_input._is_valid():
+                host, port = self.host_port_input.get()
+                return socketserver.ThreadingTCPServer(
+                (host, int(port)), server.DataHandler)
             else:
-                # It means that address is not valid
                 return None
         except OSError:
             return None
@@ -224,10 +225,10 @@ class MusicSenderAppForm(ttk.Frame):
                 else "\nCannot start server")
             self.issues_table.set_text(error_msg)
 
-    @_button_decorator
-    def _download(self, app_client):
+    @_close_mode_changer
+    def _download(self, app_client, address):
         self.issues_table.set_text("WAIT !")
-        client.automatic(app_client)
+        client.automatic(app_client, address)
         self.issues_table.set_text("FINISHED !")
 
     def _click_client(self):
@@ -237,11 +238,12 @@ class MusicSenderAppForm(ttk.Frame):
         host_port_isvalid = self._validate_port_host_input(HOST, PORT)
         if path_isvalid and host_port_isvalid:
             app_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            success = client.set_ambient(app_client, self.path_input.get(), HOST, PORT)
+            success = client.set_ambient(app_client, self.path_input.get(),
+                                         HOST, PORT)
             if success:
                 # Creates a daemon thread for requesting the missing musics
                 client_daemon = Thread(target=self._download, 
-                    args=(app_client, ), daemon=True)
+                    args=(app_client, (HOST, PORT)), daemon=True)
                 client_daemon.start()
             else:
                 print("\033[;31mThe client was unable to connect to the "
