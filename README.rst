@@ -19,5 +19,11 @@ Dependencies
 * Python3 (3.7 or latest)
 * tkinter (GUI app)
 
+Known Issues
+============
+
+* If use a Windows® System or a Linux System with firewall, to the Music Sender 
+  to work you need to disable the firewall.
+
 :Authors: Moura
 :Version: 1.0
