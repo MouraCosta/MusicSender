@@ -7,8 +7,11 @@ client."""
 import argparse
 import os
 import random
-import socketserver
+import re
 import socket
+import socketserver
+import time
+
 from . import utils
 
 
@@ -16,13 +19,29 @@ class DataHandler(socketserver.BaseRequestHandler):
     """A class that is responsible for receiving commands and sending 
     music data binaries."""
 
-    def handle(self) -> None:
+    def handle(self):
         print(f"[*] CONNECTION AT {self.client_address}")
         while True:
-            msg = self.request.recv(4096)
-            if msg == "":
+            try:
+                msg = self.request.recv(4096)
+            except OSError:
+                # At this point, the client has disconnected the server.
+                # For now, I don't have a better solution.
+                break
+            if msg == b"":
                 break
             self.handle_client_commands(msg)
+
+    def get_option(self, msg):
+        """Returns the option from the client request. Throws a ValueError 
+        exception if the expected is not a number or is a negative number."""
+        msg = msg.decode("utf8")
+        matches = re.match("--copy \d+", msg)
+        if (not matches):
+            raise ValueError("Pattern --copy \d+ does not match with given "
+                             "msg.")
+        else:
+            return int(re.search("\d+", msg)) - 1
 
     def handle_client_commands(self, msg):
         """A function that stores the logical analysis."""
@@ -32,12 +51,19 @@ class DataHandler(socketserver.BaseRequestHandler):
         elif msg == b"--raw-available":
             self._send_available()
         elif b"--copy" in msg:
-            option = msg.decode("utf8")
-            option = int("".join(option.split()[1:])) - 1
-            print(f"[*] Requested Option: {option}")
-            self._send_music_file(int(option))
+            try:
+                option = self.get_option(msg)
+            except ValueError:
+                print("\033[;31m[*] BAD CLIENT PARAMETER.\033[m")
+                self.request.send(b"bad-parameter")
+            else:
+                print(f"[*] Requested Option: {option}")
+                self._send_music_file(option)
+            finally:
+                # Immediately close the client
+                self.request.shutdown(socket.SHUT_RDWR)
+                self.request.close()
 
-    # TODO: Fix the automatic function
     def _send_music_file(self, option):
         """Send the binary music data to the client."""
         music_name = None
@@ -45,25 +71,28 @@ class DataHandler(socketserver.BaseRequestHandler):
             music_name = self._get_available()[option]
             self.request.send(music_name.encode("utf8"))
             music_file = open(music_name, "rb")
+            time.sleep(0.2)
             print(f"[*] Sending {music_name}")
             self.request.sendfile(music_file)
             print(f"[*] {music_name} sent.")
-            self.request.close()
         except IndexError:
             self.request.send(b"not-available")
 
     def _send_available(self):
+        """Send the raw string containing the music list."""
         print("[*] Sending raw string available music list")
         available_musics = "|".join(self._get_available())
         if bool(available_musics):
-            self.request.sendall(available_musics.encode("utf8"))
+            self.request.sendall(available_musics.encode())
+            print("[*] raw string available music list sent")
+            time.sleep(0.1)
+            self.request.send(b"end")
         else:
             self.request.send(b"not-available")
 
     def _get_available(self) -> list:
         """Get all the available musics on the server computer."""
-        available_musics = list(filter(utils.is_music_file, os.listdir(".")))
-        return available_musics
+        return list(filter(utils.is_music_file, os.listdir(".")))
 
 
 def set_ambient(local):
@@ -77,7 +106,8 @@ def set_ambient(local):
         elif isinstance(error, FileNotFoundError):
             print(f"The \"--local\" argument {local} does not exist.")
         elif isinstance(error, PermissionError):
-            print("You do not have enough permissions to access this directory.")
+            print("You do not have enough permissions to access this "
+                  "directory.")
             print("you must be root")
         local = "./"
         os.chdir(local)
@@ -86,7 +116,7 @@ def set_ambient(local):
 
 
 def start(server):
-    """Starts the server to run."""
+    """Starts the server."""
     print(f"[Started] --> {server.server_address}")
     server.serve_forever()
 
@@ -102,11 +132,11 @@ def main():
     # Set the arguments for the server
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--local", help="Indicates where the script "
-                           "have to found musics", default=".", type=str)
+                           "gets musics", default="./", type=str)
     argparser.add_argument("-hs", "--host", help="Server host", type=str,
                            default=socket.gethostname())
     argparser.add_argument("-p", "--port", help="Server port", type=int,
-                           default=random.randrange(1, 65432))
+                           default=random.randrange(1024, 65432))
     args = argparser.parse_args()
     set_ambient(args.local)
     server = None
