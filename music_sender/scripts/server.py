@@ -19,7 +19,7 @@ class DataHandler(socketserver.BaseRequestHandler):
     """A class that is responsible for receiving commands and sending 
     music data binaries."""
 
-    def handle(self):
+    def handle(self) -> None:
         print(f"[*] CONNECTION AT {self.client_address}")
         while True:
             try:
@@ -32,7 +32,7 @@ class DataHandler(socketserver.BaseRequestHandler):
                 break
             self.handle_client_commands(msg)
 
-    def get_option(self, msg):
+    def get_option(self, msg) -> int:
         """Returns the option from the client request. Throws a ValueError 
         exception if the expected is not a number or is a negative number."""
         msg = msg.decode("utf8")
@@ -41,9 +41,9 @@ class DataHandler(socketserver.BaseRequestHandler):
             raise ValueError("Pattern --copy \d+ does not match with given "
                              "msg.")
         else:
-            return int(re.search("\d+", msg)) - 1
+            return int(re.search("\d+", msg).group()) - 1
 
-    def handle_client_commands(self, msg):
+    def handle_client_commands(self, msg) -> None:
         """A function that stores the logical analysis."""
         print(f"[*] Command Received -> {msg}")
         if msg == b"--available":
@@ -64,7 +64,7 @@ class DataHandler(socketserver.BaseRequestHandler):
                 self.request.shutdown(socket.SHUT_RDWR)
                 self.request.close()
 
-    def _send_music_file(self, option):
+    def _send_music_file(self, option) -> None:
         """Send the binary music data to the client."""
         music_name = None
         try:
@@ -78,7 +78,7 @@ class DataHandler(socketserver.BaseRequestHandler):
         except IndexError:
             self.request.send(b"not-available")
 
-    def _send_available(self):
+    def _send_available(self) -> None:
         """Send the raw string containing the music list."""
         print("[*] Sending raw string available music list")
         available_musics = "|".join(self._get_available())
@@ -95,7 +95,7 @@ class DataHandler(socketserver.BaseRequestHandler):
         return list(filter(utils.is_music_file, os.listdir(".")))
 
 
-def set_ambient(local):
+def set_ambient(local) -> None:
     """Set the ambient for the server."""
     try:
         os.chdir(local)
@@ -115,19 +115,19 @@ def set_ambient(local):
         print("\033[m")
 
 
-def start(server):
+def start(server) -> None:
     """Starts the server."""
     print(f"[Started] --> {server.server_address}")
     server.serve_forever()
 
 
-def stop(server):
+def stop(server) -> None:
     """Stops the server."""
     server.shutdown()
     server.server_close()
 
 
-def main():
+def main() -> None:
     """Main Program"""
     # Set the arguments for the server
     argparser = argparse.ArgumentParser()
