@@ -1,3 +1,5 @@
+"""Utilities functions."""
+
 # Filters
 def is_music_file(filename):
     """Returns a True if the filename is a music file."""
