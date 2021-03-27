@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(name="music_sender", 
     packages=["music_sender", "music_sender.scripts", "music_sender.gui"], 
-    version="1.0.0",
+    version="1.0.1",
     author="moura",
     author_email="moura3950@gmail.com",
     description="A little app to send musics dinamically.",
