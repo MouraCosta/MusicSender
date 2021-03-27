@@ -14,7 +14,7 @@ import sys
 from . import utils
 
 
-def checkout(server_data):
+def checkout(server_data) -> None:
     """Check for error messages from the server."""
     if server_data == "not-available":
         print("There's no music on the server")
@@ -37,14 +37,14 @@ def raw_available(client) -> list:
     return server_musics.split("|")
 
 
-def available(client):
+def available(client) -> None:
     """Print out the available musics on the server."""
     server_musics = raw_available(client)
     for i, msc in enumerate(server_musics):
         print(f"{i + 1} -> {msc}")
 
 
-def copy(client, option):
+def copy(client, option) -> None:
     """Get a music copy from the server."""
     client.send(f"--copy {option}".encode("utf8"))
     music_name = client.recv(4096).decode("utf8")
@@ -57,13 +57,11 @@ def copy(client, option):
     print(f"{music_name} created with success.")
 
 
-def diff(client):
+def diff(client) -> (int, str):
     """Yields the relative index and the file name of the missing music
     files in client."""
-    client.send(b"--raw-available")
     server_mscs = raw_available(client)
-    client_mscs = [file for file in os.listdir(
-        ".") if utils.is_music_file(file)]
+    client_mscs = list(filter(utils.is_music_file, os.listdir(".")))
     missing_client_mscs = list(
         set(server_mscs).difference(set(client_mscs)))
     for missing in missing_client_mscs:
@@ -71,7 +69,7 @@ def diff(client):
         yield relative_index, missing
 
 
-def automatic(client, address):
+def automatic(client, address) -> None:
     """Make an automatic action. It download all the remaining musics."""
     for info in diff(client):
         copy_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -79,7 +77,7 @@ def automatic(client, address):
         copy(copy_client, info[0])
 
 
-def handle_args(client, args):
+def handle_args(client, args) -> None:
     """This function is responsible by handling the arguments."""
     if args.available and not (args.diff or args.copy or args.automatic):
         available(client)
@@ -106,19 +104,19 @@ def set_ambient(client, path, address) -> bool:
             FileNotFoundError) as err:
         if err in (FileNotFoundError, NotADirectoryError,
                    PermissionError):
-            # When the error came from the chdir() or .connect() functions.
+            # When the error came from the chdir() or connect() functions.
             print("An error has ocurred")
             print("Possible issues:\n\t-You're not root\n\t-Directory "
                   "not found or its not a directory")
         else:
-            # When it's a server error
+            # When it's a server error.
             print("\033[;31mIt was not possible to connect to "
                   "the server\033[m")
         return False
     return True
 
 
-def add_arguments(parser):
+def add_arguments(parser) -> None:
     """Add the arguments for the client app."""
     parser.add_argument("-v", "--available", help="shows the available "
                         "music catalog and theirs code numbers",
@@ -144,7 +142,7 @@ def add_arguments(parser):
                         default=random.randrange(1024, 65432))
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser()
     add_arguments(parser)
     args = parser.parse_args()
@@ -154,6 +152,8 @@ def main():
     if was_succesful:
         handle_args(client, args)
     else:
+        client.shutdown()
+        client.close()
         sys.exit(1)
 
 
