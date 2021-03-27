@@ -111,7 +111,7 @@ class HostPortForm(ttk.Frame):
             return False
         return True
 
-
+# FIXME Host and port validation errors
 class MusicSenderAppForm(ttk.Frame):
     """A dynamic form to the application."""
 

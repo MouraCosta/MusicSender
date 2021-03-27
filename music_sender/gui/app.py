@@ -1,5 +1,8 @@
+"""Main Program Module."""
+
 import tkinter as tk
 from tkinter import ttk
+
 from . import widgets
 
 
@@ -23,6 +26,7 @@ class MusicSenderApplication(tk.Tk):
 
 
 def main():
+    """Main Program."""
     app = MusicSenderApplication()
     app.mainloop()
 
