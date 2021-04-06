@@ -1,5 +1,12 @@
+# Ignoring virtual environment
 /venv
-/lrng_argp
+
+# Ignoring IDE settings
 /.vscode
+
+# Ignoring Python caches and compiled files
 __pycache__
 *.pyc
+
+# Ignoring tests directory
+tests/
