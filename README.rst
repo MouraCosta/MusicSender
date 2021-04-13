@@ -22,8 +22,11 @@ Dependencies
 Known Issues
 ============
 
-* If use a Windows® System or a Linux System with firewall, to the Music Sender 
+* If use a Windows® System or a Linux System with firewall, to the Music Sender
   to work you need to disable the firewall.
+
+* The project still in development. So the app may not work well if you try 
+  to run.
 
 :Authors: Moura
 :Version: 1.0
