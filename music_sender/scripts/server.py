@@ -1,8 +1,18 @@
-"""This is a tcp server. He's responsible for sending music binary data to 
-the client.
+"""Music Sender server script.
 
-It provides a default handler for sending musics or data about them to the 
-client."""
+This script allows the user to estabilish the server for sending musics
+dynamically to the client. If you haven't installed the package, it's
+recommended that you run this script as a module, since the imports
+won't work properly if you run it as common script.
+
+usage: server.py [-h] [-l LOCAL] [-hs HOST] [-p PORT]
+
+optional arguments:
+  -h, --help                  show this help message and exit
+  -l LOCAL, --local LOCAL     Indicates where the script gets musics
+  -hs HOST, --host HOST       Server host
+  -p PORT, --port PORT        Server port
+"""
 
 import argparse
 import os
@@ -15,12 +25,139 @@ import time
 from . import utils
 
 
+class MusicSenderServer:
+    """Music Sender server.
+
+    This is a simple TCP server that uses the IPV4 model. It's
+    functionality are command-based, so as the client sends commands to
+    the server, the server uses it's handler to handle all the commands 
+    and executes the requested operations.
+
+    Attributes:
+        HOST_PATTERN: Stores a regex pattern string for matching hosts.
+        __address: A tuple that contains the server host and port.
+        __local: A simple string that represents a directory path.
+
+    Methods:
+        set_ambient(): Sets the server ambient.
+        start(): Starts the server.
+        stop(): Shutdown and close the server.
+    """
+
+    HOST_PATTERN = r"192.168.\d{1,3}.\d{1,3}"
+
+    def __init__(self, address: (str, int), local: str) -> None:
+        """Initializes the MusicSender server.
+
+        Args:
+            address: A tuple containg a string host and a int port.
+            local: The str path where the server gets musics.
+
+        Raises:
+            ValueError:
+                Raised by __check_address() in case the address
+                isn't valid.
+        """
+
+        self.__address = address
+        self.__local = local
+        MusicSenderServer.__check_address(address)
+        self.__sock_server = socketserver.ThreadingTCPServer(
+            address, DataHandler)
+
+    @staticmethod
+    def __check_address(address: (str, int)) -> None:
+        """Checks the address.
+
+        Since Music Sender works with IPV4 adresses only, this method
+        expects to check adresses that correspond to the IPV4 model.
+        For instance, the examples that follows are valid adresses.
+
+            - ("192.168.1.4", 5000)
+            - ("192.168.255.255", 8000)
+            - ("192.168.1.12", 10000)
+
+        Args:
+            address:
+                A tuple containing a address like
+                (e.g ("localhost", 5000)).
+
+        Raises:
+            ValueError:
+                Some of the address parts are incorrect or out of
+                range.
+        """
+        matched = re.match(MusicSenderServer.HOST_PATTERN, address[0])
+        if matched:
+            # Check if the last two token is on range. (0 < x < 255)
+            host_tokens = address[0].split(".")[2:]
+            for token in host_tokens:
+                if not 0 <= int(token) <= 255:
+                    raise ValueError(f"Host {address[0]} out of range.")
+            if not 1024 <= address[1] <= 65432:
+                raise ValueError(f"Port {address[1]} out of range.")
+        else:
+            raise ValueError(f"Address {address} is invalid.")
+
+    def set_ambient(self) -> bool:
+        """Sets the server ambient.
+
+        Returns:
+            A boolean indicating whether the server did set the ambient
+            correctly without errors or it has failed. True for success
+            and False for failure.
+        """
+
+        try:
+            os.chdir(self.__local)
+            return True
+        except (FileNotFoundError, NotADirectoryError, PermissionError):
+            return False
+
+    def start(self) -> None:
+        self.__sock_server.serve_forever()
+
+    def stop(self) -> None:
+        self.__sock_server.shutdown()
+        self.__sock_server.server_close()
+
+
 class DataHandler(socketserver.BaseRequestHandler):
     """A class that is responsible for receiving commands and sending 
-    music data binaries."""
+    music data binaries.
+
+    This is a subclass of socketserver.BaseRequestHandler, so some
+    commands are overriden like the handle() method. It's inner workings
+    is command-based, so the main function is to execute procedures
+    according to those commands.
+
+    The following commands the class handles:
+
+        * --copy <any integer non-negative>
+        * --available
+        * --diff
+        * --automatic
+        * --raw-available
+
+    Methods:
+        handle():
+            Handle the requests. It's overriden.
+        get_option():
+            Function that gets an option from command sent from the
+            client.
+        handle_client_commands():
+            Handle all the client commands.
+        _send_music_file():
+            Sends the music binaries to the client.
+        _send_available():
+            Sends the available musics to the client.
+        _get_available():
+            Gets the available music on the directory the server is
+            working on.
+    """
 
     def handle(self) -> None:
-        print(f"[*] CONNECTION AT {self.client_address}")
+        print(f"\033[;33m[*] CONNECTION AT {self.client_address}\033[m")
         while True:
             try:
                 msg = self.request.recv(4096)
@@ -33,21 +170,34 @@ class DataHandler(socketserver.BaseRequestHandler):
             self.handle_client_commands(msg)
 
     def get_option(self, msg) -> int:
-        """Returns the option from the client request. Throws a ValueError 
-        exception if the expected is not a number or is a negative number."""
-        msg = msg.decode("utf8")
-        matches = re.match("--copy \d+", msg)
+        """Gets the requested musico ption from the client message.
+        
+        Args:
+            msg: The client message command string.
+        
+        Returns:
+            The option integer inside the client request message.
+        
+        Raises:
+            ValueError: When the command is not valid.
+        """
+
+        msg = msg.decode()
+        matches = re.match(r"--copy \d+", msg)
         if (not matches):
-            raise ValueError("Pattern --copy \d+ does not match with given "
-                             "msg.")
+            raise ValueError("Bad command.")
         else:
-            return int(re.search("\d+", msg).group()) - 1
+            return int(re.search(r"\d+", msg).group()) - 1
 
     def handle_client_commands(self, msg) -> None:
-        """A function that stores the logical analysis."""
+        """Executes operations requested by the client.
+        
+        Args:
+            msg: The client message command string.
+        """
         print(f"[*] Command Received -> {msg}")
         if msg == b"--available":
-            self._available()
+            self._send_available()
         elif msg == b"--raw-available":
             self._send_available()
         elif b"--copy" in msg:
@@ -64,8 +214,12 @@ class DataHandler(socketserver.BaseRequestHandler):
                 self.request.shutdown(socket.SHUT_RDWR)
                 self.request.close()
 
-    def _send_music_file(self, option) -> None:
-        """Send the binary music data to the client."""
+    def _send_music_file(self, option: int) -> None:
+        """Sends the musics binaries to the client.
+        
+        Args:
+            option: The choosen music option integer.
+        """
         music_name = None
         try:
             music_name = self._get_available()[option]
@@ -79,7 +233,7 @@ class DataHandler(socketserver.BaseRequestHandler):
             self.request.send(b"not-available")
 
     def _send_available(self) -> None:
-        """Send the raw string containing the music list."""
+        """Sends all the available music on the server directory."""
         print("[*] Sending raw string available music list")
         available_musics = "|".join(self._get_available())
         if bool(available_musics):
@@ -95,41 +249,8 @@ class DataHandler(socketserver.BaseRequestHandler):
         return list(filter(utils.is_music_file, os.listdir(".")))
 
 
-def set_ambient(local) -> None:
-    """Set the ambient for the server."""
-    try:
-        os.chdir(local)
-    except (NotADirectoryError, FileNotFoundError, PermissionError) as error:
-        print("\033[;31m")
-        if isinstance(error, NotADirectoryError):
-            print(f"The \"--local\" argument {local} is not a directory")
-        elif isinstance(error, FileNotFoundError):
-            print(f"The \"--local\" argument {local} does not exist.")
-        elif isinstance(error, PermissionError):
-            print("You do not have enough permissions to access this "
-                  "directory.")
-            print("you must be root")
-        local = "./"
-        os.chdir(local)
-        print("In the current directory.")
-        print("\033[m")
-
-
-def start(server) -> None:
-    """Starts the server."""
-    print(f"[Started] --> {server.server_address}")
-    server.serve_forever()
-
-
-def stop(server) -> None:
-    """Stops the server."""
-    server.shutdown()
-    server.server_close()
-
-
 def main() -> None:
     """Main Program"""
-    # Set the arguments for the server
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--local", help="Indicates where the script "
                            "gets musics", default="./", type=str)
@@ -138,19 +259,25 @@ def main() -> None:
     argparser.add_argument("-p", "--port", help="Server port", type=int,
                            default=random.randrange(1024, 65432))
     args = argparser.parse_args()
-    set_ambient(args.local)
     server = None
     try:
-        server = socketserver.ThreadingTCPServer((args.host, args.port),
-                                                 DataHandler)
-        start(server)
-    except OSError:
+        server = MusicSenderServer((args.host, args.port), args.local)
+        if not server.set_ambient():
+            print("Bad path string or needs root.")
+            return
+        print("\033[;32m[*] Server Started.\033[m")
+        server.start()
+    except ValueError:
+        # Raised by the server.
+        print("\033[;31mBad Host or port.\033[m")
+    except OSError as os_error:
         # When there's another server running
-        print("\033[;31mThere's another server running\033[m")
+        print("\033[;31mAn OS error ocurred.\033[m")
+        print(os_error)
     except KeyboardInterrupt:
         # When the user want to stop the server
-        print("Done")
-        stop(server)
+        server.stop()
+        print("\033[;32m\nServer shut and closed.\033[m")
 
 
 if __name__ == "__main__":
