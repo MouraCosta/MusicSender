@@ -12,6 +12,13 @@ optional arguments:
   -l LOCAL, --local LOCAL     Indicates where the script gets musics
   -hs HOST, --host HOST       Server host
   -p PORT, --port PORT        Server port
+
+Examples:
+
+    python3 -m music_sender.scripts.server -hs 192.168.1.4 -p 6734
+        -l ~/Music/
+
+    python3 -m music_sender.scripts.server -hs 192.168.1.23 -p 3001
 """
 
 import argparse
@@ -30,7 +37,7 @@ class MusicSenderServer:
 
     This is a simple TCP server that uses the IPV4 model. It's
     functionality are command-based, so as the client sends commands to
-    the server, the server uses it's handler to handle all the commands 
+    the server, the server uses it's handler to handle all the commands
     and executes the requested operations.
 
     Attributes:
@@ -115,15 +122,17 @@ class MusicSenderServer:
             return False
 
     def start(self) -> None:
+        """Starts the server."""
         self.__sock_server.serve_forever()
 
     def stop(self) -> None:
+        """Stops the server."""
         self.__sock_server.shutdown()
         self.__sock_server.server_close()
 
 
 class DataHandler(socketserver.BaseRequestHandler):
-    """A class that is responsible for receiving commands and sending 
+    """A class that is responsible for receiving commands and sending
     music data binaries.
 
     This is a subclass of socketserver.BaseRequestHandler, so some
@@ -169,29 +178,29 @@ class DataHandler(socketserver.BaseRequestHandler):
                 break
             self.handle_client_commands(msg)
 
-    def get_option(self, msg) -> int:
+    @staticmethod
+    def get_option(msg) -> int:
         """Gets the requested musico ption from the client message.
-        
+
         Args:
             msg: The client message command string.
-        
+
         Returns:
             The option integer inside the client request message.
-        
+
         Raises:
             ValueError: When the command is not valid.
         """
 
         msg = msg.decode()
         matches = re.match(r"--copy \d+", msg)
-        if (not matches):
-            raise ValueError("Bad command.")
-        else:
+        if matches:
             return int(re.search(r"\d+", msg).group()) - 1
+        raise ValueError("Bad command.")
 
     def handle_client_commands(self, msg) -> None:
         """Executes operations requested by the client.
-        
+
         Args:
             msg: The client message command string.
         """
@@ -202,7 +211,7 @@ class DataHandler(socketserver.BaseRequestHandler):
             self._send_available()
         elif b"--copy" in msg:
             try:
-                option = self.get_option(msg)
+                option = DataHandler.get_option(msg)
             except ValueError:
                 print("\033[;31m[*] BAD CLIENT PARAMETER.\033[m")
                 self.request.send(b"bad-parameter")
@@ -216,7 +225,7 @@ class DataHandler(socketserver.BaseRequestHandler):
 
     def _send_music_file(self, option: int) -> None:
         """Sends the musics binaries to the client.
-        
+
         Args:
             option: The choosen music option integer.
         """
@@ -235,7 +244,7 @@ class DataHandler(socketserver.BaseRequestHandler):
     def _send_available(self) -> None:
         """Sends all the available music on the server directory."""
         print("[*] Sending raw string available music list")
-        available_musics = "|".join(self._get_available())
+        available_musics = "|".join(DataHandler._get_available())
         if bool(available_musics):
             self.request.sendall(available_musics.encode())
             print("[*] raw string available music list sent")
@@ -244,7 +253,8 @@ class DataHandler(socketserver.BaseRequestHandler):
         else:
             self.request.send(b"not-available")
 
-    def _get_available(self) -> list:
+    @staticmethod
+    def _get_available() -> list:
         """Get all the available musics on the server computer."""
         return list(filter(utils.is_music_file, os.listdir(".")))
 
