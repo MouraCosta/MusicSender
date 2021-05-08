@@ -351,9 +351,14 @@ def main() -> None:
     add_arguments(parser)
     args = parser.parse_args()
     address = (args.host, args.port)
-    client = MusicSenderClient(address, args.local)
-    if client.set_ambient():
-        handle_args(client, args)
+    client = None
+    try:
+        client = MusicSenderClient(address, args.local)
+    except ValueError:
+        print("\033[;31Please put only valid host adresses.\033[m")
+    else:
+        if client.set_ambient():
+            handle_args(client, args)
 
 
 if __name__ == "__main__":
