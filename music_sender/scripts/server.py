@@ -1,9 +1,7 @@
 """Music Sender server script.
 
 This script allows the user to estabilish the server for sending musics
-dynamically to the client. If you haven't installed the package, it's
-recommended that you run this script as a module, since the imports
-won't work properly if you run it as common script.
+dynamically to the client.
 
 usage: server.py [-h] [-l LOCAL] [-hs HOST] [-p PORT]
 
@@ -15,10 +13,9 @@ optional arguments:
 
 Examples:
 
-    python3 -m music_sender.scripts.server -hs 192.168.1.4 -p 6734
-        -l ~/Music/
+    ms_server -hs 192.168.1.4 -p 6734 -l ~/Music/
 
-    python3 -m music_sender.scripts.server -hs 192.168.1.23 -p 3001
+    ms_server -hs 192.168.1.23 -p 3001
 """
 
 import argparse
@@ -288,7 +285,3 @@ def main() -> None:
         # When the user want to stop the server
         server.stop()
         print("\033[;32m\nServer shut and closed.\033[m")
-
-
-if __name__ == "__main__":
-    main()

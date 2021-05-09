@@ -1,9 +1,7 @@
 """Music Sender client.
 
 This script allows the user to connect to the Music Sender server for
-getting music through command-line. If the package isn't installed in
-your system, you must run this script as a module, since imports on this
-file won't work.
+getting music through command-line.
 
 usage: client.py [-h] [-v] [-c COPY] [-d] [-a] [-l LOCAL] [-hs HOST]
        [-p PORT]
@@ -35,6 +33,14 @@ optional arguments:
 
   -p PORT, --port PORT  Server port. if not specified the port is a
                         range between 1024 and 65432
+
+Examples:
+
+    ms_client -hs 192.168.243.1 -p 7462 -l ~/home/user/Music/ -v
+    
+    ms_client -hs 192.168.21.52 -p 5000 -l /Documents/Personal/ -c 345
+    
+    ms_client -hs 192.168.1.1 -p 65432 -d
 """
 
 import argparse
@@ -359,7 +365,3 @@ def main() -> None:
     else:
         if client.set_ambient():
             handle_args(client, args)
-
-
-if __name__ == "__main__":
-    main()
