@@ -8,8 +8,8 @@ setuptools.setup(name="music_sender",
     description="A little app to send musics dinamically.",
     entry_points= {
         "console_scripts": [
-            "ms_server = music_sender.scripts.server:main",
-            "ms_client = music_sender.scripts.client:main"
+            "ms_server = music_sender.server:main",
+            "ms_client = music_sender.client:main"
         ]
     }
 )
