@@ -91,8 +91,8 @@ class MusicSenderServer:
                 Some of the address parts are incorrect or out of
                 range.
         """
-        matched = re.match(MusicSenderServer.HOST_PATTERN, address[0])
-        if matched:
+
+        if re.match(MusicSenderServer.HOST_PATTERN, address[0]):
             # Check if the last two token is on range. (0 < x < 255)
             host_tokens = address[0].split(".")[2:]
             for token in host_tokens:
@@ -120,10 +120,12 @@ class MusicSenderServer:
 
     def start(self) -> None:
         """Starts the server."""
+
         self.__sock_server.serve_forever()
 
     def stop(self) -> None:
         """Stops the server."""
+
         self.__sock_server.shutdown()
         self.__sock_server.server_close()
 
@@ -135,7 +137,7 @@ class DataHandler(socketserver.BaseRequestHandler):
     This is a subclass of socketserver.BaseRequestHandler, so some
     commands are overriden like the handle() method. It's inner workings
     is command-based, so the main function is to execute procedures
-    according to those commands.
+    according to already defined commands.
 
     The following commands the class handles:
 
@@ -148,15 +150,20 @@ class DataHandler(socketserver.BaseRequestHandler):
     Methods:
         handle():
             Handle the requests. It's overriden.
+
         get_option():
             Function that gets an option from command sent from the
             client.
+
         handle_client_commands():
             Handle all the client commands.
+
         _send_music_file():
             Sends the music binaries to the client.
+
         _send_available():
             Sends the available musics to the client.
+
         _get_available():
             Gets the available music on the directory the server is
             working on.
@@ -177,7 +184,7 @@ class DataHandler(socketserver.BaseRequestHandler):
 
     @staticmethod
     def get_option(msg) -> int:
-        """Gets the requested musico ption from the client message.
+        """Gets the requested music option from the client message.
 
         Args:
             msg: The client message command string.
@@ -201,6 +208,7 @@ class DataHandler(socketserver.BaseRequestHandler):
         Args:
             msg: The client message command string.
         """
+
         print(f"[*] Command Received -> {msg}")
         if msg == b"--available":
             self._send_available()
@@ -221,30 +229,32 @@ class DataHandler(socketserver.BaseRequestHandler):
                 self.request.close()
 
     def _send_music_file(self, option: int) -> None:
-        """Sends the musics binaries to the client.
+        """Sends the music file to the client.
 
         Args:
             option: The choosen music option integer.
         """
+
         music_name = None
         try:
             music_name = self._get_available()[option]
             self.request.send(music_name.encode("utf8"))
-            music_file = open(music_name, "rb")
-            time.sleep(0.2)
-            print(f"[*] Sending {music_name}")
-            self.request.sendfile(music_file)
-            print(f"[*] {music_name} sent.")
+            with open(music_name, "rb") as music_file:
+                time.sleep(0.2)
+                print(f"\033[;33m[*] Sending {music_name}\033[m")
+                self.request.sendfile(music_file)
+                print(f"\033[;92m[*] {music_name} sent.\033[m")
         except IndexError:
             self.request.send(b"not-available")
 
     def _send_available(self) -> None:
         """Sends all the available music on the server directory."""
-        print("[*] Sending raw string available music list")
+
+        print("\033[;36m[*] Sending raw string available music list\033[m")
         available_musics = "|".join(DataHandler._get_available())
         if bool(available_musics):
             self.request.sendall(available_musics.encode())
-            print("[*] raw string available music list sent")
+            print("\033[;96m[*] raw string available music list sent\033[m")
             time.sleep(0.1)
             self.request.send(b"end")
         else:
@@ -253,11 +263,13 @@ class DataHandler(socketserver.BaseRequestHandler):
     @staticmethod
     def _get_available() -> list:
         """Get all the available musics on the server computer."""
+
         return list(filter(utils.is_music_file, os.listdir(".")))
 
 
 def main() -> None:
     """Main Program"""
+
     argparser = argparse.ArgumentParser()
     argparser.add_argument("-l", "--local", help="Indicates where the script "
                            "gets musics", default="./", type=str)
@@ -278,7 +290,6 @@ def main() -> None:
         # Raised by the server.
         print("\033[;31mBad Host or port.\033[m")
     except OSError as os_error:
-        # When there's another server running
         print("\033[;31mAn OS error ocurred.\033[m")
         print(os_error)
     except KeyboardInterrupt:
