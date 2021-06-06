@@ -184,15 +184,10 @@ class MusicSenderClient:
             os.chdir(self.local)
             self.client.connect(self.address)
             return True
-        # FIXME: This code is dangerous, not every exception should
-        # pass.
-        except Exception:
-            # This is a bad implementation, but I don't know about audit
-            # events. But False is returned whether occurs a changing
-            # directory error, or a connection error.
+        except OSError:
             return False
 
-    def copy(self, option: int) -> None:
+    def copy(self, option: int) -> (str, False):
         """Executes the --copy command.
 
         Args:
@@ -206,13 +201,17 @@ class MusicSenderClient:
         self.client.send(f"--copy {option}".encode())
         music_name = self.client.recv(4096).decode()
         if MusicSenderClient.checkit(music_name):
-            with open(music_name, "wb") as music_file:
-                client_file = self.client.makefile("rb")
-                music_file.write(client_file.read())
-                client_file.close()
+            try:
+                with open(music_name, "wb") as music_file:
+                    client_file = self.client.makefile("rb")
+                    data = client_file.read()
+                    music_file.write(data)
+                    client_file.close()
+            except (KeyboardInterrupt, OSError):
+                return music_name, False
         else:
-            return ""
-        return music_name
+            return "", False
+        return music_name, True
 
     def raw_available(self) -> [str]:
         """Sends a --raw-available to the server.
@@ -263,21 +262,28 @@ class MusicSenderClient:
 
     def automatic(self) -> None:
         """Executes the --automatic command. It generates the created
-        music name.
+        music name. In case of any errors, the function tries to
+        download the music again
 
         Yields:
             A string representing the created music.
         """
 
-        for info in self.diff():
-            # FIXME: It's not efficient to create multiple sockets.
-            # Implement your own socket that flushes the received data.
+        musics_to_download = [info[0] for info in self.diff()]
+
+        while len(musics_to_download) != 0:
+            code = musics_to_download.pop()
             copy_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            copy_client.connect(self.address)
+            try:
+                copy_client.connect(self.address)
+            except ConnectionRefusedError:
+                return
             self.client = copy_client
-            self.copy(info[0])
+            music_name, successfull = self.copy(code)
+            if not successfull:
+                musics_to_download.append(code)
             self.client.close()
-            yield info[1]
+            yield music_name
 
 
 def handle_args(client: MusicSenderClient, args) -> None:
@@ -287,11 +293,12 @@ def handle_args(client: MusicSenderClient, args) -> None:
 
         client: A MusicSenderClient instance.
     """
+
     available = args.available and not (args.diff or args.copy \
                                         or args.automatic)
     copy = args.copy and not (args.diff or args.automatic or args.available)
-    automatic = args.automatic and not (args.available or args.copy\
-                                        or args.diff)
+    automatic = args.automatic and not (args.available or args.copy \
+        or args.diff)
     diff = args.diff and not (args.available or args.copy or args.automatic)
 
     if available:
@@ -302,10 +309,13 @@ def handle_args(client: MusicSenderClient, args) -> None:
         print("=" * 30)
     elif copy:
         option = args.copy
-        created_music = client.copy(option)
-        if created_music:
+        created_music, was_successful = client.copy(option)
+        if was_successful:
             print(f"\033[;32mMusic {created_music} created.\033[m")
-        else:
+        elif created_music and not was_successful:
+            print(f"\033[;31mMusic {created_music} was not created. The created"
+                  + "file can be corrupted.\033[m")
+        elif not (created_music and was_successful):
             print("\033[;31mThe music you're looking for doesn't exist\033[m")
     elif automatic:
         print("Please wait...")
