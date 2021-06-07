@@ -7,8 +7,11 @@ usage: server.py [-h] [-l LOCAL] [-hs HOST] [-p PORT]
 
 optional arguments:
   -h, --help                  show this help message and exit
+
   -l LOCAL, --local LOCAL     Indicates where the script gets musics
+
   -hs HOST, --host HOST       Server host
+
   -p PORT, --port PORT        Server port
 
 Examples:
@@ -32,10 +35,8 @@ from . import utils
 class MusicSenderServer:
     """Music Sender server.
 
-    This is a simple TCP server that uses the IPV4 model. It's
-    functionality are command-based, so as the client sends commands to
-    the server, the server uses it's handler to handle all the commands
-    and executes the requested operations.
+    This is a simple TCP server. It is responsible for sending music
+    files to a MusicSenderClient.
 
     Attributes:
         HOST_PATTERN: Stores a regex pattern string for matching hosts.
@@ -174,13 +175,13 @@ class DataHandler(socketserver.BaseRequestHandler):
         while True:
             try:
                 msg = self.request.recv(4096)
+                if msg == b"":
+                    break
+                self.handle_client_commands(msg)
             except OSError:
                 # At this point, the client has disconnected the server.
                 # For now, I don't have a better solution.
                 break
-            if msg == b"":
-                break
-            self.handle_client_commands(msg)
 
     @staticmethod
     def get_option(msg) -> int:
@@ -210,9 +211,7 @@ class DataHandler(socketserver.BaseRequestHandler):
         """
 
         print(f"[*] Command Received -> {msg}")
-        if msg == b"--available":
-            self._send_available()
-        elif msg == b"--raw-available":
+        if msg == b"--raw-available":
             self._send_available()
         elif b"--copy" in msg:
             try:
@@ -242,8 +241,12 @@ class DataHandler(socketserver.BaseRequestHandler):
             with open(music_name, "rb") as music_file:
                 time.sleep(0.2)
                 print(f"\033[;33m[*] Sending {music_name}\033[m")
-                self.request.sendfile(music_file)
-                print(f"\033[;92m[*] {music_name} sent.\033[m")
+                try:
+                    self.request.sendfile(music_file)
+                except BrokenPipeError:
+                    print(f"\033[;31m[*] Sending {music_name} has failed.\033[m")
+                else:
+                    print(f"\033[;92m[*] {music_name} sent.\033[m")
         except IndexError:
             self.request.send(b"not-available")
 
